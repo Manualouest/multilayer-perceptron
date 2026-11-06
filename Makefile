@@ -6,7 +6,9 @@ CXXFLAGS = -g --std=c++17 -Wall -Wextra -Werror
 INC = -Iinclude
 
 SRC_DIR = src/
-SRC =	main.cpp
+SRC =	main.cpp\
+		brain/layer.cpp\
+		brain/brain.cpp
 
 OBJ_DIR = obj/
 OBJ = $(addprefix $(OBJ_DIR), $(SRC:.cpp=.o))

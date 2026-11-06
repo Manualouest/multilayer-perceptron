@@ -6,7 +6,7 @@
 /*   By: mbirou <mbirou@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/13 18:47:26 by mbirou            #+#    #+#             */
-/*   Updated: 2026/08/13 19:47:16 by mbirou           ###   ########.fr       */
+/*   Updated: 2026/11/06 14:18:41 by mbirou           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,66 +16,38 @@
 #include "../include/brain/math/math.hpp"
 
 #include <iostream>
+#include <random>
 #include <ctime>
+#include <algorithm>
+#include <utility>
 #include <vector>
 #include <fstream>
+#include <sstream>
 
 
 int main()
 {
-	/* // trying the maths
-	try
 	{
-		Mmath::mat<float>	a(4, 3, 1);
-		Mmath::mat<float>	b(3, 3, 2);
-		Mmath::mat<float>	c(4, 3, 0, (double[2]){1, 10});
+		// mat<float>	X(2, 100);
+		// mat<float>	y(1, 100);
 		
-		a[0][1] = 0;
-		a[1][0] = 2;
-		a[2][0] = 0;
-		a[3][2] = 2;
+		// {
+		// 	for (int i = 0; i < 100; ++i)
+		// 	{
+		// 		y[0][i] = ((float)std::rand() / (float)RAND_MAX) > 0.5f;
+		// 		if (y[0][i])
+		// 		{
+		// 			X[0][i] = ((float)std::rand() / (float)RAND_MAX) * 0.5f;
+		// 			X[1][i] = ((float)std::rand() / (float)RAND_MAX) * 0.5f;
+		// 		}
+		// 		else
+		// 		{
+		// 			X[0][i] = ((float)std::rand() / (float)RAND_MAX) * 0.3f + 0.7f;
+		// 			X[1][i] = ((float)std::rand() / (float)RAND_MAX) * 0.3f + 0.7f;
+		// 		}
+		// 	}
+		// }
 
-		b[0][0] = 1;
-		b[0][2] = 1;
-		b[1][1] = 3;
-		b[1][2] = 1;
-		b[2][0] = 4;
-
-		PRINT a ENDL ENDL AND b ENDL ENDL;
-
-
-		PRINT c ENDL;
-		c = a * b;
-		PRINT c ENDL;
-	}
-	catch(const std::exception& e)
-	{
-		PRERR 0 SAND e.what() ENDL;
-	}
- */
-	
-	
-	
-	{
-		Mmath::mat<float>	X(2, 100);
-		Mmath::mat<float>	y(1, 100);
-		
-		{
-			for (int i = 0; i < 100; ++i)
-			{
-				y[0][i] = ((float)std::rand() / (float)RAND_MAX) > 0.5f;
-				if (y[0][i])
-				{
-					X[0][i] = ((float)std::rand() / (float)RAND_MAX) * 0.5f;
-					X[1][i] = ((float)std::rand() / (float)RAND_MAX) * 0.5f;
-				}
-				else
-				{
-					X[0][i] = ((float)std::rand() / (float)RAND_MAX) * 0.3f + 0.7f;
-					X[1][i] = ((float)std::rand() / (float)RAND_MAX) * 0.3f + 0.7f;
-				}
-			}
-		}
 		// {
 		// 	X._data[0] = {-0.94957536,0.09138459,0.93214973,0.20734231,-0.36750218,0.2532073
 		// 		,-0.40867925,-0.27450909,0.24224991,0.158872,0.17984262,0.19490678
@@ -116,97 +88,196 @@ int main()
 		// 		, 0, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0};
 		// }
 
+		std::vector<std::pair<float, std::vector<float>>>	randomizedData;
+		std::vector<std::vector<float>>	dataRaw;
+		std::vector<float>				resultsRaw;
 
-		float	n0	= X.shape()[0];
-		float	n1	= 32;
-		float	n2	= y.shape()[0];
-		float	learning_rate = 0.1;
-		float	iters = 1000;
+
+		std::ifstream	dataFile("data.csv");
+		std::string		line;
+		while (std::getline(dataFile, line))
+		{
+			std::replace(line.begin(), line.end(), ',', ' ');
+			std::stringstream	info(line);
+			std::vector<float>	dataLine;
+			std::string			resultSign;
+			float				tp;
+			
+			info >> tp >> resultSign;
+			// resultsRaw.push_back((resultSign == "M" ? 1 : 0));
+
+			while (!info.eof())
+			{
+				info >> tp;
+				dataLine.push_back(tp);
+			}
+			// dataRaw.push_back(dataLine);
+			randomizedData.push_back(std::make_pair((resultSign == "M" ? 1 : 0), dataLine));
+		}
 
 		std::srand(64867531);
 
-		double	randRange[2] = {-3, 3};
-		Mmath::mat<float>	W1(n1, n0, 0, randRange);
-		Mmath::mat<float>	b1(n1, 1, 0);
-		Mmath::mat<float>	W2(n2, n1, 0, randRange);
-		Mmath::mat<float>	b2(n2, 1, 0);
+		std::random_device rd;
+		std::mt19937 g(rd());
+		std::shuffle(randomizedData.begin(), randomizedData.end(), g);
 
-		std::vector<float> train_loss;
-		std::vector<float> train_acc;
-		std::vector<float> history;
 
-		Mmath::mat<float>	Z1;
-		Mmath::mat<float>	A1;
-		Mmath::mat<float>	Z2;
-		Mmath::mat<float>	A2;
+		std::vector<std::vector<float>>	testDataRaw;
+		std::vector<float>				testResultsRaw;
 
-		float				m = y.shape()[1];
-		Mmath::mat<float>	dZ1;
-		Mmath::mat<float>	dW1;
-		Mmath::mat<float>	db1;
-		Mmath::mat<float>	dZ2;
-		Mmath::mat<float>	dW2;
-		Mmath::mat<float>	db2;
-
+		size_t	i = 0;
+		for (auto elem : randomizedData)
 		{
-			for (int i = 0; i < iters; ++i)
+			if (i < randomizedData.size() / 2)
 			{
-				{ //forward
-					Z1 = W1.dot(X) + b1;
-					A1 = 1. / (1. + exp(0-Z1));
-					Z2 = W2.dot(A1) + b2;
-					A2 = 1. / (1. + exp(0-Z2));
-					Mmath::mat<float> Atest = sigmoid(sigmoid(X, W1, b1), W2, b2);
-
-					if (A2 != Atest)
-						PRINT RED BOLD "oi sigmoids failed" CENDL;
-				}
-
-
-				{ //back
-					dZ2 = A2 - y;
-					dW2 = 1. / m * dZ2.dot(A1.transpose());
-					db2 = 1. / m * dZ2.sumRows();
-
-					dZ1 = W2.transpose().dot(dZ2) * A1 * (1 - A1);
-					dW1 = 1. / m * dZ1.dot(X.transpose());
-					db1 = 1. / m * dZ1.sumRows();
-				}
-
-
-				{ //log loss and accuracy
-					Mmath::vec<float>	yF = y.flatten();
-					Mmath::vec<float>	A2F = A2.flatten();
-					float				loss = (0 - (yF * A2F.log() + (1 - yF) * (1 - A2F).log())).average();
-					train_loss.push_back(loss);
-					
-					Mmath::vec<float>	yPred = A2F.checkRes(0.5);
-					float				acc = yPred.compare(yF);
-					train_acc.push_back(acc);
-
-					PRINT "loss: " AND loss SAND "acc: " AND acc ENDL;
-				}
-
-
-				{ //update
-					W1 = W1 - learning_rate * dW1;
-					b1 = b1 - learning_rate * db1;
-					W2 = W2 - learning_rate * dW2;
-					b2 = b2 - learning_rate * db2;
-				}
+				dataRaw.push_back(elem.second);
+				resultsRaw.push_back(elem.first);
 			}
+			{
+				testDataRaw.push_back(elem.second);
+				testResultsRaw.push_back(elem.first);
+			}
+			i ++;
 		}
 
 
 
 
-		std::ofstream	train_lossF("train_loss.txt");
-		std::ofstream	train_accF("train_acc.txt");
+
+		PRINT "finished reading the file." ENDL;
+
+		mat<float>	dataSet(dataRaw);
+		mat<float>	resultsSet(resultsRaw);
+		dataSet = dataSet.transpose();
+
+		mat<float>	testData(testDataRaw);
+		mat<float>	testResults(testResultsRaw);
+		testData = testData.transpose();
 
 
-		for (auto n : train_loss)
-			train_lossF << n << ", ";
-		for (auto n : train_acc)
-			train_accF << n << ", ";
+
+
+
+
+		double		randRange[2] = {-3, 3};
+
+
+		Brain	brain;
+
+
+		brain.addLayer(Layer(dataSet.shape()[0], dataSet.shape()[0], sigmoid, randRange));
+		brain.addLayer(Layer(24, dataSet.shape()[0], sigmoid, randRange));
+		brain.addLayer(Layer(24, 24, sigmoid, randRange));
+		brain.addLayer(Layer(24, 24, sigmoid, randRange));
+		brain.addLayer(Layer(resultsSet.shape()[0], 24, sigmoid, randRange));
+		brain.setDataSet(dataSet);
+		brain.setResultSet(resultsSet);
+
+		PRINT "launching training." ENDL;
+		
+		brain.train(100);
+
+
+		NEWL;
+		PRINT "checking with the rest of the data:" ENDL;
+		NEWL;
+
+		brain.predict(testData, testResults);
+
+
+
+
+
+
+	// 	float	n0	= dataSet.shape()[0];
+	// 	float	n1	= 32;
+	// 	float	n2	= resultsSet.shape()[0];
+	// 	float	learning_rate = 0.1;
+	// 	float	iters = 1000;
+
+	// 	std::srand(64867531);
+
+	// 	mat<float>	W1(n1, n0, randRange);
+	// 	mat<float>	b1(n1, 1);
+	// 	mat<float>	W2(n2, n1, randRange);
+	// 	mat<float>	b2(n2, 1);
+
+	// 	std::vector<float> train_loss;
+	// 	std::vector<float> train_acc;
+	// 	std::vector<float> history;
+
+	// 	mat<float>	Z1;
+	// 	mat<float>	A1;
+	// 	mat<float>	Z2;
+	// 	mat<float>	A2;
+
+	// 	float		m = resultsSet.shape()[1];
+	// 	mat<float>	dZ1;
+	// 	mat<float>	dW1;
+	// 	mat<float>	db1;
+	// 	mat<float>	dZ2;
+	// 	mat<float>	dW2;
+	// 	mat<float>	db2;
+
+	// 	{
+	// 		for (int i = 0; i < iters; ++i)
+	// 		{
+	// 			{ //forward
+	// 				Z1 = W1.dot(dataSet) + b1;
+	// 				A1 = 1. / (1. + exp(0-Z1));
+	// 				Z2 = W2.dot(A1) + b2;
+	// 				A2 = 1. / (1. + exp(0-Z2));
+	// 				mat<float> Atest = sigmoid(sigmoid(dataSet, W1, b1), W2, b2);
+
+	// 				if (A2 != Atest)
+	// 					PRINT RED BOLD "oi sigmoids failed" CENDL;
+	// 			}
+
+
+	// 			{ //back
+	// 				dZ2 = A2 - resultsSet;
+	// 				dW2 = 1. / m * dZ2.dot(A1.transpose());
+	// 				db2 = 1. / m * dZ2.sumRows();
+
+	// 				dZ1 = W2.transpose().dot(dZ2) * A1 * (1 - A1);
+	// 				dW1 = 1. / m * dZ1.dot(dataSet.transpose());
+	// 				db1 = 1. / m * dZ1.sumRows();
+	// 			}
+
+
+	// 			{ //log loss and accuracy
+	// 				vec<float>	yF = resultsSet.flatten();
+	// 				vec<float>	A2F = A2.flatten();
+	// 				float				loss = (0 - (yF * A2F.log() + (1 - yF) * (1 - A2F).log())).average();
+	// 				train_loss.push_back(loss);
+					
+	// 				vec<float>	yPred = A2F.checkRes(0.5);
+	// 				float				acc = yPred.compare(yF);
+	// 				train_acc.push_back(acc);
+
+	// 				PRINT "loss: " AND loss SAND "acc: " AND acc ENDL;
+	// 			}
+
+
+	// 			{ //update
+	// 				W1 = W1 - learning_rate * dW1;
+	// 				b1 = b1 - learning_rate * db1;
+	// 				W2 = W2 - learning_rate * dW2;
+	// 				b2 = b2 - learning_rate * db2;
+	// 			}
+	// 		}
+	// 	}
+
+
+
+
+	// 	std::ofstream	train_lossF("train_loss.txt");
+	// 	std::ofstream	train_accF("train_acc.txt");
+
+
+	// 	for (auto n : train_loss)
+	// 		train_lossF << n << ", ";
+	// 	for (auto n : train_acc)
+	// 		train_accF << n << ", ";
 	}
 }
